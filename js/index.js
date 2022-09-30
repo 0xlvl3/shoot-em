@@ -1,3 +1,9 @@
+import Enemy from "./classes/Enemy.js";
+import Player from "./classes/Player.js";
+import Particle from "./classes/Particle.js";
+import Projectile from "./classes/Projectile.js";
+import PowerUp from "./classes/PowerUp.js";
+
 const scoreEl = document.getElementById("scoreEl");
 const modalEl = document.getElementById("modalEl");
 const endScoreEl = document.getElementById("endScoreEl");
@@ -5,168 +11,28 @@ const buttonEl = document.getElementById("buttonEl");
 const startButton = document.getElementById("startButton");
 const startModalEl = document.getElementById("startModalEl");
 const body = document.getElementById("body");
-const canvas = document.querySelector("canvas");
-const c = canvas.getContext("2d"); //returns a drawing context on the canvas
+export const canvas = document.querySelector("canvas");
+export const c = canvas.getContext("2d"); //returns a drawing context on the canvas
 
 //game dimensions
 //when using window we don't need to declare window
 canvas.width = innerWidth; //window.innerWidth
 canvas.height = innerHeight; //window.innerHeight
 
-class Player {
-  constructor(x, y, radius, color) {
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.color = color;
-    this.velocity = {
-      x: 0,
-      y: 0,
-    };
-  }
-
-  draw() {
-    c.beginPath();
-    c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-    c.fillStyle = this.color;
-    c.fill();
-  }
-
-  update() {
-    this.draw();
-
-    const friction = 0.95;
-    //friction will slow our player down
-    this.velocity.x *= friction;
-    this.velocity.y *= friction;
-
-    //collisions both relate to our player not running out of the canvas width and height
-    //collision detection for x axis
-    if (
-      this.x + this.radius + this.velocity.x <= canvas.width &&
-      this.x - this.radius + this.velocity.x >= 0
-    ) {
-      this.x += this.velocity.x;
-    } else {
-      this.velocity.x = 0;
-    }
-    //collision detection for y axis
-    if (
-      this.y + this.radius + this.velocity.y <= canvas.height &&
-      this.y - this.radius + this.velocity.y >= 0
-    ) {
-      this.y += this.velocity.y;
-    } else {
-      this.velocity.y = 0;
-    }
-  }
-}
-
-class Projectile {
-  constructor(x, y, radius, color, velocity) {
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.color = color;
-    this.velocity = velocity;
-  }
-
-  draw() {
-    c.beginPath();
-    c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-    c.fillStyle = this.color;
-    c.fill();
-  }
-
-  update() {
-    this.draw();
-    this.x = this.x + this.velocity.x;
-    this.y = this.y + this.velocity.y;
-  }
-}
-
-class Enemy {
-  constructor(x, y, radius, color, velocity) {
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.color = color;
-    this.velocity = velocity;
-
-    //used for different types of enemies
-    this.type = "Linear";
-
-    if (Math.random() < 0.5) {
-      this.type = "Homing";
-    }
-  }
-
-  draw() {
-    c.beginPath();
-    c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-    c.fillStyle = this.color;
-    c.fill();
-  }
-
-  update() {
-    this.draw();
-
-    if (this.type === "Homing") {
-      //using right angles we determine the hypotenus between our player and enemy
-      const angle = Math.atan2(player.y - this.y, player.x - this.x);
-      this.velocity.x = Math.cos(angle);
-      this.velocity.y = Math.sin(angle);
-    }
-
-    this.x = this.x + this.velocity.x;
-    this.y = this.y + this.velocity.y;
-  }
-}
-
-const friction = 0.99;
-
-class Particle {
-  constructor(x, y, radius, color, velocity) {
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.color = color;
-    this.velocity = velocity;
-
-    this.alpha = 1; //will help with removing particles
-  }
-
-  draw() {
-    //c.save and c.restore allow us to call c.globalAlpha
-    c.save();
-    c.globalAlpha = this.alpha;
-    c.beginPath();
-    c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-    c.fillStyle = this.color;
-    c.fill();
-    c.restore();
-  }
-
-  update() {
-    this.draw();
-    this.velocity.x *= friction;
-    this.velocity.y *= friction;
-    this.x = this.x + this.velocity.x;
-    this.y = this.y + this.velocity.y;
-    this.alpha -= 0.01;
-  }
-}
-
 //coords for middle of canvas
 const x = canvas.width / 2;
 const y = canvas.height / 2;
 
-let player = new Player(x, y, 30, "white");
+export let player = new Player(x, y, 30, "white");
 player.draw();
 
 let projectiles = [];
 let enemies = [];
 let particles = [];
+let powerUp = new PowerUp({
+  position: { x: 100, y: 100 },
+  imageSrc: "./img/lightningBolt.png",
+});
 let intervalId;
 let score = 0;
 
@@ -228,6 +94,7 @@ function animate() {
   c.fillRect(0, 0, canvas.width, canvas.height);
 
   player.update();
+  powerUp.draw();
 
   for (let index = particles.length - 1; index >= 0; index--) {
     const particle = particles[index];
