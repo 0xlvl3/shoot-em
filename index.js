@@ -19,6 +19,10 @@ class Player {
     this.y = y;
     this.radius = radius;
     this.color = color;
+    this.velocity = {
+      x: 0,
+      y: 0,
+    };
   }
 
   draw() {
@@ -26,6 +30,35 @@ class Player {
     c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
     c.fillStyle = this.color;
     c.fill();
+  }
+
+  update() {
+    this.draw();
+
+    const friction = 0.95;
+    //friction will slow our player down
+    this.velocity.x *= friction;
+    this.velocity.y *= friction;
+
+    //collisions both relate to our player not running out of the canvas width and height
+    //collision detection for x axis
+    if (
+      this.x + this.radius + this.velocity.x <= canvas.width &&
+      this.x - this.radius + this.velocity.x >= 0
+    ) {
+      this.x += this.velocity.x;
+    } else {
+      this.velocity.x = 0;
+    }
+    //collision detection for y axis
+    if (
+      this.y + this.radius + this.velocity.y <= canvas.height &&
+      this.y - this.radius + this.velocity.y >= 0
+    ) {
+      this.y += this.velocity.y;
+    } else {
+      this.velocity.y = 0;
+    }
   }
 }
 
@@ -59,6 +92,13 @@ class Enemy {
     this.radius = radius;
     this.color = color;
     this.velocity = velocity;
+
+    //used for different types of enemies
+    this.type = "Linear";
+
+    if (Math.random() < 0.5) {
+      this.type = "Homing";
+    }
   }
 
   draw() {
@@ -70,6 +110,14 @@ class Enemy {
 
   update() {
     this.draw();
+
+    if (this.type === "Homing") {
+      //using right angles we determine the hypotenus between our player and enemy
+      const angle = Math.atan2(player.y - this.y, player.x - this.x);
+      this.velocity.x = Math.cos(angle);
+      this.velocity.y = Math.sin(angle);
+    }
+
     this.x = this.x + this.velocity.x;
     this.y = this.y + this.velocity.y;
   }
@@ -179,7 +227,7 @@ function animate() {
   c.fillStyle = "rgba(0,0,0,0.1)";
   c.fillRect(0, 0, canvas.width, canvas.height);
 
-  player.draw();
+  player.update();
 
   for (let index = particles.length - 1; index >= 0; index--) {
     const particle = particles[index];
@@ -292,8 +340,8 @@ addEventListener("click", (e) => {
   //Math.atan2 will return y and x radians used for our cos and sin methods
   const angle = Math.atan2(
     //y is always first in atan2
-    e.clientY - canvas.height / 2,
-    e.clientX - canvas.width / 2
+    e.clientY - player.y,
+    e.clientX - player.x
   );
 
   //these coords will return the hypotenuse - which we will use to angle our projectiles with our mouse coords when we click
@@ -302,9 +350,7 @@ addEventListener("click", (e) => {
     y: Math.sin(angle) * 4.5, //sin === y
   };
 
-  projectiles.push(
-    new Projectile(canvas.width / 2, canvas.height / 2, 5, "white", velocity)
-  );
+  projectiles.push(new Projectile(player.x, player.y, 5, "white", velocity));
 });
 
 buttonEl.addEventListener("click", () => {
@@ -337,4 +383,26 @@ startButton.addEventListener("click", () => {
       startModalEl.style.display = "none";
     },
   });
+});
+
+//Player movement
+addEventListener("keydown", ({ key }) => {
+  switch (key) {
+    case "d":
+      console.log("right");
+      player.velocity.x += 1;
+      break;
+    case "a":
+      console.log("left");
+      player.velocity.x -= 1;
+      break;
+    case "w":
+      console.log("up");
+      player.velocity.y -= 1;
+      break;
+    case "s":
+      console.log("down");
+      player.velocity.y += 1;
+      break;
+  }
 });
