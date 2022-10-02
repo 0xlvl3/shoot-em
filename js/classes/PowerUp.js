@@ -12,10 +12,42 @@ export default class PowerUp {
     this.image = new Image();
     this.image.src = imageSrc;
 
+    //this will help us fade our powerup
     this.alpha = 1;
+    //using gsap we fade our alpha
+    gsap.to(this, {
+      alpha: 0.02, //will effect the opacity of our image
+      duration: 0.3, //duration that it will take to fade our specified alpha
+      repeat: -1, //repeat loop
+      yoyo: true, //yoyo will make it go back from our alpha we specified in gsap to our true alpha
+      ease: "linear",
+    });
+
+    this.radians = 0;
   }
 
   draw() {
-    c.drawImage(this.image, 100, 100);
+    //c.save and c.restore as require for us to use the globalAlpha
+    c.save();
+    c.globalAlpha = this.alpha;
+    //how we rotate an image
+    c.translate(
+      this.position.x + this.image.width / 2,
+      this.position.y + this.image.height / 2
+    );
+    c.rotate(this.radians);
+    c.translate(
+      -this.position.x - this.image.width / 2,
+      -this.position.y - this.image.height / 2
+    );
+    ///////////////////////////////////////
+    c.drawImage(this.image, this.position.x, this.position.y);
+    c.restore();
+  }
+
+  update() {
+    this.draw();
+    this.radians += 0.01;
+    this.position.x += this.velocity.x;
   }
 }

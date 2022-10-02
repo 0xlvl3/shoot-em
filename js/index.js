@@ -29,12 +29,11 @@ player.draw();
 let projectiles = [];
 let enemies = [];
 let particles = [];
-let powerUp = new PowerUp({
-  position: { x: 100, y: 100 },
-  imageSrc: "./img/lightningBolt.png",
-});
+let powerUps = [];
 let intervalId;
+let spawnPowerUpsId;
 let score = 0;
+let frames = 0;
 
 function init() {
   player = new Player(x, y, 30, "white");
@@ -42,8 +41,10 @@ function init() {
   projectiles = [];
   enemies = [];
   particles = [];
+  powerUps = [];
   score = 0;
   scoreEl.innerHTML = 0;
+  frames = 0;
 }
 
 /**
@@ -85,6 +86,46 @@ function spawnEnemies() {
   }, 1000);
 }
 
+function spawnPowerUps() {
+  spawnPowerUpsId = setInterval(() => {
+    powerUps.push(
+      new PowerUp({
+        position: { x: -30, y: Math.random() * canvas.height },
+        velocity: { x: Math.random() + 2, y: 0 },
+        imageSrc: "./img/lightningBolt.png",
+      })
+    );
+  }, 15000);
+}
+
+/**
+ *
+ * @param {object} position takes x and y coords of where projectile collision with enemy
+ * @param {object} score
+ *
+ * function creates a label element, through this element we style some of the properties and posiiton to have mini score labels that show when we hit an enemy.
+ */
+function createScoreLabel({ position, score }) {
+  const scoreLabel = document.createElement("label");
+  scoreLabel.innerHTML = score;
+  scoreLabel.style.color = "white";
+  scoreLabel.style.position = "absolute";
+  scoreLabel.style.left = position.x + "px";
+  scoreLabel.style.top = position.y + "px";
+  scoreLabel.style.userSelect = "none"; //makes user not able to select labels
+  scoreLabel.style.left = document.body.appendChild(scoreLabel);
+
+  //gsap here reduces the opacity to 0, translates on the y axis -30 to make a move up effect, we have a duration of 0.75 for that to occur and onComplete will remove our element we created in this function after gsap completes all those steps.
+  gsap.to(scoreLabel, {
+    opacity: 0,
+    y: -30,
+    duration: 0.75,
+    onComplete: () => {
+      scoreLabel.parentNode.removeChild(scoreLabel);
+    },
+  });
+}
+
 let animationId; //will be used to end game
 function animate() {
   animationId = requestAnimationFrame(animate);
@@ -92,9 +133,54 @@ function animate() {
   //fillStyle here with rgba opacity 0.1 makes our game have that lighttrail effect on the projectiles and enemies
   c.fillStyle = "rgba(0,0,0,0.1)";
   c.fillRect(0, 0, canvas.width, canvas.height);
+  frames++;
 
   player.update();
-  powerUp.draw();
+
+  for (let i = powerUps.length - 1; i >= 0; i--) {
+    const powerUp = powerUps[i];
+
+    if (powerUp.position.x > canvas.width) {
+      powerUps.splice(i, 1);
+    } else {
+      powerUp.update();
+    }
+
+    const dist = Math.hypot(
+      player.x - powerUp.position.x,
+      player.y - powerUp.position.y
+    );
+
+    //gain power up
+    if (dist < powerUp.image.height / 2 + player.radius) {
+      powerUps.splice(i, 1);
+      player.powerUp = "MachineGun";
+      player.color = "yellow";
+      setTimeout(() => {
+        player.powerUp = null;
+        player.color = "white";
+      }, 5000);
+    }
+  }
+
+  //machine gun animation / implementation
+  if (player.powerUp === "MachineGun") {
+    const angle = Math.atan2(
+      mouse.position.y - player.y,
+      mouse.position.x - player.x
+    );
+    const velocity = {
+      x: Math.cos(angle) * 5, //cos === x
+      y: Math.sin(angle) * 5, //sin === y
+    };
+
+    //slow down rate of fire for power up
+    if (frames % 2 === 0) {
+      projectiles.push(
+        new Projectile(player.x, player.y, 5, "yellow", velocity)
+      );
+    }
+  }
 
   for (let index = particles.length - 1; index >= 0; index--) {
     const particle = particles[index];
@@ -133,6 +219,7 @@ function animate() {
     if (dist - enemy.radius - player.radius < 1) {
       cancelAnimationFrame(animationId); //cancels animation on frame when collision was detected
       clearInterval(intervalId); //stops enemies from spawning when we loose
+      clearInterval(spawnPowerUpsId); //will remove powerups
       modalEl.style.display = "block";
       gsap.fromTo(
         modalEl,
@@ -179,6 +266,13 @@ function animate() {
           gsap.to(enemy, {
             radius: enemy.radius - 10,
           });
+          createScoreLabel({
+            position: {
+              x: projectile.x,
+              y: projectile.y,
+            },
+            score: 50,
+          });
           // setTimeout(() => {
           projectiles.splice(projectileIndex, 1);
           // }, 0);
@@ -188,6 +282,13 @@ function animate() {
 
           //placing our splice into a setTimeout will remove flash when removing projectile and enemy from canvas
           // setTimeout(() => {
+          createScoreLabel({
+            position: {
+              x: projectile.x,
+              y: projectile.y,
+            },
+            score: 150,
+          });
           enemies.splice(enemyIndex, 1);
           projectiles.splice(projectileIndex, 1);
           // }, 0);
@@ -224,6 +325,7 @@ buttonEl.addEventListener("click", () => {
   init();
   animate();
   spawnEnemies();
+  spawnPowerUps();
   gsap.to(modalEl, {
     opacity: 0,
     scale: 0.8,
@@ -235,10 +337,25 @@ buttonEl.addEventListener("click", () => {
   });
 });
 
+//global mouse var
+const mouse = {
+  position: {
+    x: 0,
+    y: 0,
+  },
+};
+
+//getting coords for our global mouse var
+addEventListener("mousemove", (e) => {
+  mouse.position.x = e.clientX;
+  mouse.position.y = e.clientY;
+});
+
 startButton.addEventListener("click", () => {
   init();
   animate();
   spawnEnemies();
+  spawnPowerUps();
   body.style.backgroundColor = "white";
   // startModalEl.style.display = "none";
   gsap.to(startModalEl, {
