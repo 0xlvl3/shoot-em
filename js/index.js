@@ -3,6 +3,7 @@ import Player from "./classes/Player.js";
 import Particle from "./classes/Particle.js";
 import Projectile from "./classes/Projectile.js";
 import PowerUp from "./classes/PowerUp.js";
+import BackgroundParticle from "./classes/BackgroundParticle.js";
 
 const scoreEl = document.getElementById("scoreEl");
 const modalEl = document.getElementById("modalEl");
@@ -30,6 +31,7 @@ let projectiles = [];
 let enemies = [];
 let particles = [];
 let powerUps = [];
+let backgroundParticles = [];
 let intervalId;
 let spawnPowerUpsId;
 let score = 0;
@@ -45,6 +47,21 @@ function init() {
   score = 0;
   scoreEl.innerHTML = 0;
   frames = 0;
+
+  const spacing = 30;
+  backgroundParticles = [];
+  for (let x = 0; x < canvas.width + spacing; x += spacing) {
+    for (let y = 0; y < canvas.height + spacing; y += spacing)
+      backgroundParticles.push(
+        new BackgroundParticle({
+          position: {
+            x,
+            y,
+          },
+          radius: 2.5,
+        })
+      );
+  }
 }
 
 /**
@@ -130,6 +147,25 @@ let animationId; //will be used to end game
 function animate() {
   animationId = requestAnimationFrame(animate);
 
+  backgroundParticles.forEach((bgParticle) => {
+    bgParticle.draw();
+
+    const dist = Math.hypot(
+      player.x - bgParticle.position.x,
+      player.y - bgParticle.position.y
+    );
+
+    if (dist < 150) {
+      bgParticle.alpha = 0;
+      if (dist > 100) {
+        bgParticle.alpha = 0.5;
+      }
+    } else if (dist > 100 && bgParticle.alpha < 0.1) {
+      bgParticle.alpha += 0.01;
+    } else if (dist > 100 && bgParticle.alpha > 0.1) {
+      bgParticle.alpha -= 0.01;
+    }
+  });
   //fillStyle here with rgba opacity 0.1 makes our game have that lighttrail effect on the projectiles and enemies
   c.fillStyle = "rgba(0,0,0,0.1)";
   c.fillRect(0, 0, canvas.width, canvas.height);
@@ -289,6 +325,17 @@ function animate() {
             },
             score: 150,
           });
+          backgroundParticles.forEach((bgParticle) => {
+            gsap.set(bgParticle, {
+              color: "white",
+              alpha: 1,
+            });
+            gsap.to(bgParticle, {
+              color: enemy.color,
+              alpha: 0.1,
+            });
+            bgParticle.color = enemy.color;
+          });
           enemies.splice(enemyIndex, 1);
           projectiles.splice(projectileIndex, 1);
           // }, 0);
@@ -373,19 +420,15 @@ startButton.addEventListener("click", () => {
 addEventListener("keydown", ({ key }) => {
   switch (key) {
     case "d":
-      console.log("right");
       player.velocity.x += 1;
       break;
     case "a":
-      console.log("left");
       player.velocity.x -= 1;
       break;
     case "w":
-      console.log("up");
       player.velocity.y -= 1;
       break;
     case "s":
-      console.log("down");
       player.velocity.y += 1;
       break;
   }
