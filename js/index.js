@@ -23,13 +23,7 @@ export const c = canvas.getContext("2d"); //returns a drawing context on the can
 canvas.width = innerWidth; //window.innerWidth
 canvas.height = innerHeight; //window.innerHeight
 
-//coords for middle of canvas
-const x = canvas.width / 2;
-const y = canvas.height / 2;
-
-export let player = new Player(x, y, 30, "white");
-player.draw();
-
+export let player;
 let projectiles = [];
 let enemies = [];
 let particles = [];
@@ -44,6 +38,10 @@ let game = {
 };
 
 function init() {
+  //coords for middle of canvas
+  const x = canvas.width / 2;
+  const y = canvas.height / 2;
+
   player = new Player(x, y, 30, "white");
 
   projectiles = [];
@@ -140,6 +138,7 @@ function createScoreLabel({ position, score }) {
   scoreLabel.style.top = position.y + "px";
   scoreLabel.style.userSelect = "none"; //makes user not able to select labels
   scoreLabel.style.left = document.body.appendChild(scoreLabel);
+  scoreLabel.style.pointerEvents = "none"; //this will prevent ios touch event from zooming in
 
   //gsap here reduces the opacity to 0, translates on the y axis -30 to make a move up effect, we have a duration of 0.75 for that to occur and onComplete will remove our element we created in this function after gsap completes all those steps.
   gsap.to(scoreLabel, {
@@ -369,6 +368,11 @@ addEventListener("click", (e) => {
     audio.background.play();
     audioInitialized = true;
   }
+
+  shoot({ x: e.clientX, y: e.clientY });
+});
+
+function shoot({ x, y }) {
   if (game.active) {
     //1. get the angle
     //2. put in atan2 === angle needed for hypotenuse
@@ -378,8 +382,8 @@ addEventListener("click", (e) => {
     //Math.atan2 will return y and x radians used for our cos and sin methods
     const angle = Math.atan2(
       //y is always first in atan2
-      e.clientY - player.y,
-      e.clientX - player.x
+      y - player.y,
+      x - player.x
     );
 
     //these coords will return the hypotenuse - which we will use to angle our projectiles with our mouse coords when we click
@@ -391,7 +395,7 @@ addEventListener("click", (e) => {
     projectiles.push(new Projectile(player.x, player.y, 5, "white", velocity));
     audio.shoot.play();
   }
-});
+}
 
 buttonEl.addEventListener("click", () => {
   init();
@@ -424,6 +428,11 @@ addEventListener("mousemove", (e) => {
   mouse.position.y = e.clientY;
 });
 
+addEventListener("touchmove", (event) => {
+  mouse.position.x = event.touches[0].clientX;
+  mouse.position.y = event.touches[0].clientY;
+});
+
 startButton.addEventListener("click", () => {
   init();
   audio.select.play();
@@ -441,6 +450,23 @@ startButton.addEventListener("click", () => {
       startModalEl.style.display = "none";
     },
   });
+});
+
+addEventListener("touchstart", (event) => {
+  const x = event.touches[0].clientX;
+  const y = event.touches[0].clientY;
+
+  mouse.position.x = event.touches[0].clientX;
+  mouse.position.y = event.touches[0].clientY;
+
+  shoot({ x, y });
+});
+
+addEventListener("resize", () => {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+
+  init();
 });
 
 //Player movement
@@ -480,5 +506,18 @@ volumeOffEl.addEventListener("click", (e) => {
 
   for (let key in audio) {
     audio[key].mute(false);
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    //inactive
+    //clearIntervals
+    clearInterval(intervalId);
+    clearInterval(spawnPowerUpsId);
+  } else {
+    //spawnEnemies
+    spawnEnemies();
+    spawnPowerUps();
   }
 });
