@@ -12,6 +12,8 @@ const endScoreEl = document.getElementById("endScoreEl");
 const buttonEl = document.getElementById("buttonEl");
 const startButton = document.getElementById("startButton");
 const startModalEl = document.getElementById("startModalEl");
+const volumeOnEl = document.getElementById("volumeOn");
+const volumeOffEl = document.getElementById("volumeOff");
 const body = document.getElementById("body");
 export const canvas = document.querySelector("canvas");
 export const c = canvas.getContext("2d"); //returns a drawing context on the canvas
@@ -360,10 +362,12 @@ function animate() {
   }
 }
 
+let audioInitialized = false;
 //window.addEventListener
 addEventListener("click", (e) => {
-  if (!audio.background.playing()) {
+  if (!audio.background.playing() && !audioInitialized) {
     audio.background.play();
+    audioInitialized = true;
   }
   if (game.active) {
     //1. get the angle
@@ -454,5 +458,27 @@ addEventListener("keydown", ({ key }) => {
     case "s":
       player.velocity.y += 1;
       break;
+  }
+});
+
+//mute everything
+volumeOnEl.addEventListener("click", (e) => {
+  audio.background.pause();
+  volumeOffEl.style.display = "block";
+  volumeOnEl.style.display = "none";
+
+  for (let key in audio) {
+    audio[key].mute(true);
+  }
+});
+
+//unmute all
+volumeOffEl.addEventListener("click", (e) => {
+  if (audioInitialized) audio.background.play();
+  volumeOnEl.style.display = "block";
+  volumeOffEl.style.display = "none";
+
+  for (let key in audio) {
+    audio[key].mute(false);
   }
 });
