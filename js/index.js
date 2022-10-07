@@ -4,6 +4,7 @@ import Particle from "./classes/Particle.js";
 import Projectile from "./classes/Projectile.js";
 import PowerUp from "./classes/PowerUp.js";
 import BackgroundParticle from "./classes/BackgroundParticle.js";
+import audio from "./audio.js";
 
 const scoreEl = document.getElementById("scoreEl");
 const modalEl = document.getElementById("modalEl");
@@ -36,6 +37,9 @@ let intervalId;
 let spawnPowerUpsId;
 let score = 0;
 let frames = 0;
+let game = {
+  active: false,
+};
 
 function init() {
   player = new Player(x, y, 30, "white");
@@ -47,6 +51,9 @@ function init() {
   score = 0;
   scoreEl.innerHTML = 0;
   frames = 0;
+  game = {
+    active: true,
+  };
 
   const spacing = 30;
   backgroundParticles = [];
@@ -189,6 +196,7 @@ function animate() {
 
     //gain power up
     if (dist < powerUp.image.height / 2 + player.radius) {
+      audio.powerUp.play();
       powerUps.splice(i, 1);
       player.powerUp = "MachineGun";
       player.color = "yellow";
@@ -215,6 +223,9 @@ function animate() {
       projectiles.push(
         new Projectile(player.x, player.y, 5, "yellow", velocity)
       );
+    }
+    if (frames % 5 === 0) {
+      audio.shoot.play();
     }
   }
 
@@ -253,6 +264,8 @@ function animate() {
 
     //project hits player end game
     if (dist - enemy.radius - player.radius < 1) {
+      audio.death.play();
+      game.active = false;
       cancelAnimationFrame(animationId); //cancels animation on frame when collision was detected
       clearInterval(intervalId); //stops enemies from spawning when we loose
       clearInterval(spawnPowerUpsId); //will remove powerups
@@ -297,6 +310,7 @@ function animate() {
 
         //this if block will reduce enemy size
         if (enemy.radius - 10 > 5) {
+          audio.damageTaken.play();
           scoreEl.innerHTML = score += 50;
           //we use gsap here to make our transition smooth when enemy decreases
           gsap.to(enemy, {
@@ -336,6 +350,7 @@ function animate() {
             });
             bgParticle.color = enemy.color;
           });
+          audio.explode.play();
           enemies.splice(enemyIndex, 1);
           projectiles.splice(projectileIndex, 1);
           // }, 0);
@@ -347,29 +362,36 @@ function animate() {
 
 //window.addEventListener
 addEventListener("click", (e) => {
-  //1. get the angle
-  //2. put in atan2 === angle needed for hypotenuse
-  //3. get x and y velocities, sin(angle) === y, cos(angle) === x.
-  //4. cos(x) and sin(y) === hypotenuse
+  if (!audio.background.playing()) {
+    audio.background.play();
+  }
+  if (game.active) {
+    //1. get the angle
+    //2. put in atan2 === angle needed for hypotenuse
+    //3. get x and y velocities, sin(angle) === y, cos(angle) === x.
+    //4. cos(x) and sin(y) === hypotenuse
 
-  //Math.atan2 will return y and x radians used for our cos and sin methods
-  const angle = Math.atan2(
-    //y is always first in atan2
-    e.clientY - player.y,
-    e.clientX - player.x
-  );
+    //Math.atan2 will return y and x radians used for our cos and sin methods
+    const angle = Math.atan2(
+      //y is always first in atan2
+      e.clientY - player.y,
+      e.clientX - player.x
+    );
 
-  //these coords will return the hypotenuse - which we will use to angle our projectiles with our mouse coords when we click
-  const velocity = {
-    x: Math.cos(angle) * 4.5, //cos === x
-    y: Math.sin(angle) * 4.5, //sin === y
-  };
+    //these coords will return the hypotenuse - which we will use to angle our projectiles with our mouse coords when we click
+    const velocity = {
+      x: Math.cos(angle) * 4.5, //cos === x
+      y: Math.sin(angle) * 4.5, //sin === y
+    };
 
-  projectiles.push(new Projectile(player.x, player.y, 5, "white", velocity));
+    projectiles.push(new Projectile(player.x, player.y, 5, "white", velocity));
+    audio.shoot.play();
+  }
 });
 
 buttonEl.addEventListener("click", () => {
   init();
+  audio.select.play();
   animate();
   spawnEnemies();
   spawnPowerUps();
@@ -400,6 +422,7 @@ addEventListener("mousemove", (e) => {
 
 startButton.addEventListener("click", () => {
   init();
+  audio.select.play();
   animate();
   spawnEnemies();
   spawnPowerUps();
