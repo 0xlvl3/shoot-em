@@ -1,4 +1,4 @@
-import { c } from "/js/index.js";
+import { c } from "/index.js";
 
 export default class Particle {
   constructor(x, y, radius, color, velocity) {

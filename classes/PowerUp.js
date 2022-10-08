@@ -1,4 +1,4 @@
-import { c } from "../js/index.js";
+import { c } from "/index.js";
 
 //const powerUp = new PowerUp({x: 100, y: 100, velocity : {x: 0, y: 0}})
 

@@ -1,4 +1,4 @@
-import { c, player } from "../js/index.js";
+import { c, player } from "/index.js";
 
 export default class Enemy {
   constructor(x, y, radius, color, velocity) {
