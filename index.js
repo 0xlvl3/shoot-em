@@ -1,10 +1,10 @@
-import Enemy from "./classes/Enemy.js";
-import Player from "./classes/Player.js";
-import Particle from "./classes/Particle.js";
-import Projectile from "./classes/Projectile.js";
-import PowerUp from "./classes/PowerUp.js";
-import BackgroundParticle from "./classes/BackgroundParticle.js";
-import audio from "./audio.js";
+import Enemy from "./js/classes/Enemy.js";
+import Player from "./js/classes/Player.js";
+import Particle from "./js/classes/Particle.js";
+import Projectile from "./js/classes/Projectile.js";
+import PowerUp from "./js/classes/PowerUp.js";
+import BackgroundParticle from "./js/classes/BackgroundParticle.js";
+import audio from "./js/audio.js";
 
 const scoreEl = document.getElementById("scoreEl");
 const modalEl = document.getElementById("modalEl");
